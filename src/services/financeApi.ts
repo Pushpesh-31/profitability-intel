@@ -18,16 +18,43 @@ async function fetchFinancialData(
   ticker: string,
   category: CompanyCategory
 ): Promise<FinancialData> {
-  const response = await axios.get<FinanceApiResponse>(
-    `${API_BASE}/${ticker}/full`,
-    { params: { category } }
-  );
+  try {
+    const response = await axios.get<FinanceApiResponse>(
+      `${API_BASE}/${ticker}/full`,
+      { params: { category } }
+    );
 
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Failed to fetch financial data');
+    if (!response.data.success || !response.data.data) {
+      // Build detailed error message
+      const errorParts = [response.data.error || 'Failed to fetch financial data'];
+      if (response.data.details?.length) {
+        errorParts.push(`Missing: ${response.data.details.join(', ')}`);
+      }
+      throw new Error(errorParts.join('. '));
+    }
+
+    // Log warnings if present (non-critical issues)
+    if (response.data.warnings?.length) {
+      console.warn(`[finance] Warnings for ${ticker}:`, response.data.warnings);
+    }
+
+    return response.data.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const apiError = error.response?.data as FinanceApiResponse | undefined;
+      if (apiError?.error) {
+        const errorParts = [apiError.error];
+        if (apiError.details?.length) {
+          errorParts.push(`Missing: ${apiError.details.join(', ')}`);
+        }
+        throw new Error(errorParts.join('. '));
+      }
+      if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
+        throw new Error('Cannot connect to server. Is the backend running?');
+      }
+    }
+    throw error;
   }
-
-  return response.data.data;
 }
 
 /**

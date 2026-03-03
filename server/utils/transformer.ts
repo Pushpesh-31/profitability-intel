@@ -1,17 +1,127 @@
 /**
  * Yahoo Finance Data Transformer
  *
- * Transforms raw Yahoo Finance quoteSummary response into our FinancialData shape.
+ * Transforms raw Yahoo Finance fundamentalsTimeSeries + quoteSummary response
+ * into our FinancialData shape.
+ *
+ * Updated for Yahoo Finance API changes (Nov 2024):
+ * - Uses fundamentalsTimeSeries for financial statements
+ * - Uses quoteSummary only for basic info (name, sector, beta)
  *
  * Key transformations:
- * - Divide all monetary values by 1,000,000 (Yahoo returns raw values)
- * - Extract current and prior year balance sheet items
+ * - Divide all monetary values by 1,000,000 (API returns raw values)
+ * - Extract current and prior year data for average calculations
  * - Map field names to our interface
  * - Handle null/missing values gracefully
  */
 
-import type { QuoteSummaryResult } from 'yahoo-finance2/dist/esm/src/modules/quoteSummary-iface';
-import type { FinancialData, CompanyCategory } from '../../src/types';
+import type { QuoteSummaryResult } from 'yahoo-finance2/modules/quoteSummary-iface';
+import type { FinancialData, CompanyCategory, DataQuality } from '../../src/types';
+
+// Types for fundamentalsTimeSeries response
+interface FundamentalsTimeSeriesEntry {
+  date: Date;
+  totalRevenue?: number;
+  operatingRevenue?: number;
+  costOfRevenue?: number;
+  grossProfit?: number;
+  sellingGeneralAndAdministration?: number;
+  researchAndDevelopment?: number;
+  operatingIncome?: number;
+  operatingExpense?: number;
+  netIncome?: number;
+  ebit?: number;
+  ebitda?: number;
+  interestExpense?: number;
+  incomeTaxExpense?: number;
+  pretaxIncome?: number;
+  // Balance sheet items
+  totalAssets?: number;
+  stockholdersEquity?: number;
+  totalStockholdersEquity?: number;
+  totalDebt?: number;
+  longTermDebt?: number;
+  currentDebt?: number;
+  cashAndCashEquivalents?: number;
+  cash?: number;
+  goodwill?: number;
+  goodwillAndOtherIntangibleAssets?: number;
+}
+
+/**
+ * Validation result for transformed financial data
+ */
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+/**
+ * Validate that transformed financial data has required fields for DuPont analysis
+ * Also sets data quality and warnings on the data object
+ */
+export function validateFinancialData(data: FinancialData): ValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Critical fields that would cause DuPont calculation failures
+  if (data.revenue === 0) {
+    errors.push('Revenue is zero or missing');
+  }
+  if (data.totalAssetsCurrent === 0) {
+    errors.push('Current year total assets are zero or missing');
+  }
+  if (data.equityCurrent === 0) {
+    errors.push('Current year equity is zero or missing');
+  }
+  if (data.totalAssetsPrior === 0) {
+    errors.push('Prior year total assets are zero or missing (needed for average)');
+  }
+  if (data.equityPrior === 0) {
+    errors.push('Prior year equity is zero or missing (needed for average)');
+  }
+
+  // Non-critical but notable missing data
+  if (data.netIncome === 0) {
+    warnings.push('Net income is zero - DuPont ratios will show zero profitability');
+  }
+  if (data.fiscalYear === 'FY Unknown') {
+    warnings.push('Could not determine fiscal year from data');
+  }
+  if (data.beta === null) {
+    warnings.push('Beta unavailable - CAPM cost of equity cannot be calculated');
+  }
+  if (data.rdExpense === null) {
+    warnings.push('R&D expense not reported');
+  }
+  if (data.interestExpense === null) {
+    warnings.push('Interest expense unavailable - WACC estimate may be less accurate');
+  }
+  if (data.revenuePrior === null) {
+    warnings.push('Prior year revenue unavailable - YoY growth cannot be calculated');
+  }
+
+  // Calculate data quality
+  let dataQuality: DataQuality = 'complete';
+  if (errors.length > 0) {
+    dataQuality = 'limited';
+  } else if (warnings.length > 3) {
+    dataQuality = 'partial';
+  } else if (warnings.length > 0) {
+    dataQuality = 'complete'; // Minor warnings don't affect quality
+  }
+
+  // Add quality and warnings to data object
+  data.dataQuality = dataQuality;
+  data.dataWarnings = warnings;
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
 
 /**
  * Safely get a numeric value, converting to millions
@@ -30,29 +140,63 @@ function safeNumber(value: number | undefined | null): number | null {
 }
 
 /**
- * Transform Yahoo Finance quoteSummary to FinancialData
+ * Filter out entries with no meaningful financial data and sort by date descending
  */
-export function transformYahooData(
-  result: QuoteSummaryResult,
+function filterAndSortEntries(
+  entries: FundamentalsTimeSeriesEntry[],
+  type: 'financials' | 'balance-sheet'
+): FundamentalsTimeSeriesEntry[] {
+  // Filter out entries with no meaningful data
+  const filtered = entries.filter((entry) => {
+    if (type === 'financials') {
+      // Must have revenue data
+      return (entry.totalRevenue ?? entry.operatingRevenue) != null;
+    } else {
+      // Must have total assets data
+      return entry.totalAssets != null;
+    }
+  });
+
+  // Sort by date descending (most recent first)
+  return filtered.sort((a, b) => {
+    const dateA = a.date instanceof Date ? a.date.getTime() : new Date(a.date).getTime();
+    const dateB = b.date instanceof Date ? b.date.getTime() : new Date(b.date).getTime();
+    return dateB - dateA;
+  });
+}
+
+/**
+ * Transform Yahoo Finance fundamentalsTimeSeries + quoteSummary to FinancialData
+ */
+export function transformFundamentalsData(
+  financialsData: FundamentalsTimeSeriesEntry[] | null,
+  balanceSheetData: FundamentalsTimeSeriesEntry[] | null,
+  quoteSummaryData: QuoteSummaryResult | null,
   ticker: string,
   category: CompanyCategory
 ): FinancialData {
-  const income = result.incomeStatementHistory?.incomeStatementHistory;
-  const balance = result.balanceSheetHistory?.balanceSheetStatements;
-  const keyStats = result.defaultKeyStatistics;
-  const profile = result.summaryProfile;
-  const price = result.price;
+  // Filter out entries with no data and sort by date descending
+  const financials = financialsData
+    ? filterAndSortEntries(financialsData, 'financials')
+    : [];
+  const balanceSheet = balanceSheetData
+    ? filterAndSortEntries(balanceSheetData, 'balance-sheet')
+    : [];
 
-  // Current year income statement (index 0 is most recent)
-  const currentIncome = income?.[0];
-  const priorIncome = income?.[1];
+  const keyStats = quoteSummaryData?.defaultKeyStatistics;
+  const profile = quoteSummaryData?.summaryProfile;
+  const price = quoteSummaryData?.price;
+
+  // Current year financials (index 0 is most recent)
+  const currentFinancials = financials[0];
+  const priorFinancials = financials[1];
 
   // Current and prior year balance sheet
-  const currentBalance = balance?.[0];
-  const priorBalance = balance?.[1];
+  const currentBalance = balanceSheet[0];
+  const priorBalance = balanceSheet[1];
 
-  // Determine fiscal year from the income statement date
-  const fiscalYearEnd = currentIncome?.endDate;
+  // Determine fiscal year from the financials date
+  const fiscalYearEnd = currentFinancials?.date;
   const fiscalYear = fiscalYearEnd
     ? `FY ${new Date(fiscalYearEnd).getFullYear()}`
     : 'FY Unknown';
@@ -74,6 +218,36 @@ export function transformYahooData(
   // Build FinancialData object
   // =========================================================================
 
+  // Get equity value - try different field names
+  const getEquity = (entry: FundamentalsTimeSeriesEntry | undefined): number => {
+    if (!entry) return 0;
+    return toMillions(
+      entry.stockholdersEquity ?? entry.totalStockholdersEquity ?? 0
+    );
+  };
+
+  // Get total debt - try different combinations
+  const getTotalDebt = (entry: FundamentalsTimeSeriesEntry | undefined): number => {
+    if (!entry) return 0;
+    if (entry.totalDebt != null) return toMillions(entry.totalDebt);
+    const longTerm = entry.longTermDebt ?? 0;
+    const current = entry.currentDebt ?? 0;
+    return toMillions(longTerm + current);
+  };
+
+  // Get cash value
+  const getCash = (entry: FundamentalsTimeSeriesEntry | undefined): number => {
+    if (!entry) return 0;
+    return toMillions(entry.cashAndCashEquivalents ?? entry.cash ?? 0);
+  };
+
+  // Get goodwill
+  const getGoodwill = (entry: FundamentalsTimeSeriesEntry | undefined): number | null => {
+    if (!entry) return null;
+    const value = entry.goodwill ?? entry.goodwillAndOtherIntangibleAssets;
+    return value != null ? toMillions(value) : null;
+  };
+
   return {
     // Identifiers
     name,
@@ -82,55 +256,51 @@ export function transformYahooData(
     currency,
     category,
     sector,
-    dataNote: 'Yahoo Finance API',
+    dataNote: 'Yahoo Finance API (fundamentalsTimeSeries)',
 
     // Income Statement - Current Year
-    revenue: toMillions(currentIncome?.totalRevenue),
-    netIncome: toMillions(currentIncome?.netIncome),
-    costOfSales: toMillions(currentIncome?.costOfRevenue),
-    grossProfit: toMillions(currentIncome?.grossProfit),
-    operatingIncome: toMillions(currentIncome?.operatingIncome),
-    ebit: toMillions(currentIncome?.ebit ?? currentIncome?.operatingIncome),
-    rdExpense: currentIncome?.researchDevelopment
-      ? toMillions(currentIncome.researchDevelopment)
+    revenue: toMillions(currentFinancials?.totalRevenue ?? currentFinancials?.operatingRevenue),
+    netIncome: toMillions(currentFinancials?.netIncome),
+    costOfSales: toMillions(currentFinancials?.costOfRevenue),
+    grossProfit: toMillions(currentFinancials?.grossProfit),
+    operatingIncome: toMillions(currentFinancials?.operatingIncome),
+    ebit: toMillions(currentFinancials?.ebit ?? currentFinancials?.operatingIncome),
+    rdExpense: currentFinancials?.researchAndDevelopment
+      ? toMillions(currentFinancials.researchAndDevelopment)
       : null,
-    sgaExpense: toMillions(currentIncome?.sellingGeneralAdministrative),
-    interestExpense: currentIncome?.interestExpense
-      ? toMillions(currentIncome.interestExpense)
+    sgaExpense: toMillions(currentFinancials?.sellingGeneralAndAdministration),
+    interestExpense: currentFinancials?.interestExpense
+      ? toMillions(currentFinancials.interestExpense)
       : null,
-    incomeTaxExpense: currentIncome?.incomeTaxExpense
-      ? toMillions(currentIncome.incomeTaxExpense)
+    incomeTaxExpense: currentFinancials?.incomeTaxExpense
+      ? toMillions(currentFinancials.incomeTaxExpense)
       : null,
-    incomeBeforeTax: currentIncome?.incomeBeforeTax
-      ? toMillions(currentIncome.incomeBeforeTax)
+    incomeBeforeTax: currentFinancials?.pretaxIncome
+      ? toMillions(currentFinancials.pretaxIncome)
       : null,
 
     // Balance Sheet - Current Year
     totalAssetsCurrent: toMillions(currentBalance?.totalAssets),
-    equityCurrent: toMillions(currentBalance?.totalStockholderEquity),
-    totalDebt: toMillions(
-      (currentBalance?.longTermDebt ?? 0) + (currentBalance?.shortLongTermDebt ?? 0)
-    ),
-    cash: toMillions(currentBalance?.cash),
-    goodwill: currentBalance?.goodWill
-      ? toMillions(currentBalance.goodWill)
-      : null,
+    equityCurrent: getEquity(currentBalance),
+    totalDebt: getTotalDebt(currentBalance),
+    cash: getCash(currentBalance),
+    goodwill: getGoodwill(currentBalance),
 
     // Balance Sheet - Prior Year
     totalAssetsPrior: toMillions(priorBalance?.totalAssets),
-    equityPrior: toMillions(priorBalance?.totalStockholderEquity),
+    equityPrior: getEquity(priorBalance),
 
     // Income Statement - Prior Year (for YoY calculations)
-    revenuePrior: priorIncome?.totalRevenue
-      ? toMillions(priorIncome.totalRevenue)
+    revenuePrior: priorFinancials?.totalRevenue
+      ? toMillions(priorFinancials.totalRevenue)
       : null,
-    ebitPrior: priorIncome?.ebit
-      ? toMillions(priorIncome.ebit)
-      : priorIncome?.operatingIncome
-        ? toMillions(priorIncome.operatingIncome)
+    ebitPrior: priorFinancials?.ebit
+      ? toMillions(priorFinancials.ebit)
+      : priorFinancials?.operatingIncome
+        ? toMillions(priorFinancials.operatingIncome)
         : null,
-    netIncomePrior: priorIncome?.netIncome
-      ? toMillions(priorIncome.netIncome)
+    netIncomePrior: priorFinancials?.netIncome
+      ? toMillions(priorFinancials.netIncome)
       : null,
 
     // Cost of Equity estimate
@@ -138,3 +308,6 @@ export function transformYahooData(
     beta: safeNumber(keyStats?.beta),
   };
 }
+
+// Keep old export name for backwards compatibility during transition
+export const transformYahooData = transformFundamentalsData;

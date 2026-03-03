@@ -56,13 +56,39 @@ export function CompanyPillTabs() {
               style={{ backgroundColor: categoryColor }}
             />
 
+            {/* Data quality warning indicator */}
+            {company.data.dataQuality === 'partial' && (
+              <span
+                className="text-reference text-xs ml-0.5"
+                title={company.data.dataWarnings?.join('\n') || 'Some data may be incomplete'}
+              >
+                ⚠
+              </span>
+            )}
+            {company.data.dataQuality === 'limited' && (
+              <span
+                className="text-competitor text-xs ml-0.5"
+                title={company.data.dataWarnings?.join('\n') || 'Limited data available'}
+              >
+                ⚠
+              </span>
+            )}
+
             {/* Remove button (on hover) */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 removeCompany(company.data.ticker);
               }}
-              className="hidden group-hover:block text-muted hover:text-competitor text-xs ml-1"
+              className={cn(
+                'hidden group-hover:flex',
+                'items-center justify-center w-5 h-5 ml-1',
+                'rounded-full bg-border/50 hover:bg-competitor/20',
+                'text-muted hover:text-competitor',
+                'text-sm font-bold',
+                'transition-all duration-150'
+              )}
+              aria-label={`Remove ${company.data.ticker}`}
             >
               ×
             </button>

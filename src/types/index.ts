@@ -17,6 +17,8 @@ export type ViewTab = 'deep-dive' | 'compare';
 // Financial Data (from Yahoo Finance API)
 // ============================================================================
 
+export type DataQuality = 'complete' | 'partial' | 'limited';
+
 export interface FinancialData {
   // Core identifiers
   name: string;
@@ -26,6 +28,10 @@ export interface FinancialData {
   category: CompanyCategory;
   sector: string;
   dataNote: string;
+
+  // Data quality indicator
+  dataQuality?: DataQuality;
+  dataWarnings?: string[];
 
   // Income Statement - Current Year
   revenue: number;                       // in millions
@@ -190,6 +196,10 @@ export interface FinanceApiResponse {
   success: boolean;
   data?: FinancialData;
   error?: string;
+  code?: string;
+  details?: string[];
+  warnings?: string[];
+  cached?: boolean;
 }
 
 // ============================================================================

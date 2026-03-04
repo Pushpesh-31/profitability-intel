@@ -39,7 +39,7 @@ export function Header() {
             Profitability Intelligence
           </h1>
           <p className="text-muted text-sm mt-1">
-            AspenTech / Emerson Competitive Intelligence
+            DuPont ROE Analysis Dashboard
           </p>
         </div>
 

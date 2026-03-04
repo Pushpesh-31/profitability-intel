@@ -8,8 +8,7 @@
 ## Project Identity
 
 **Name:** Profitability Intelligence Dashboard
-**Owner:** Pushpesh (Director of Product Management, AspenTech / Emerson)
-**Purpose:** Competitive intelligence tool for benchmarking industrial automation & energy sector companies — both competitors and customers — using DuPont ROE decomposition analysis. Strategic use — not public-facing.
+**Purpose:** Competitive intelligence tool for benchmarking industrial automation & energy sector companies — both competitors and customers — using DuPont ROE decomposition analysis. Personal use — not public-facing.
 **Created:** February 2026
 **Stack:** React 18 + TypeScript + Vite + Tailwind CSS + Recharts + Yahoo Finance API (via proxy backend)
 
@@ -31,7 +30,7 @@ Users enter a stock ticker + category (Competitor / Customer / Reference) and th
    - Assumptions panel (collapsible — exposes Risk-Free Rate, ERP, per-company COE overrides)
 5. Pre-loaded with seed data: Schneider Electric, Honeywell, Emerson Automation, SLB (all Competitors, FY2024)
 
-**Target users:** Pushpesh and his product strategy team. Desktop-only. No auth required initially.
+**Target users:** Personal use. Desktop-only. No auth required initially.
 
 ---
 
@@ -41,8 +40,8 @@ Every company has a `category` field. This drives filtering and badge colors thr
 
 ```
 competitor  →  Direct or adjacent software/automation competitors
-customer    →  Energy, O&G, chemicals companies that buy AspenTech products
-reference   →  Benchmark companies (AspenTech itself, pure-play SaaS)
+customer    →  Energy, O&G, chemicals companies that buy industrial software
+reference   →  Benchmark companies (user's own company, pure-play SaaS)
 ```
 
 Category badge colors — use these consistently everywhere:
@@ -391,4 +390,4 @@ VITE_ANTHROPIC_API_KEY=your_key_here    # Phase 2 — AI narrative insights
 2. Read `TODO.md` to see what's in progress
 3. Run `npm run dev` to check current state
 4. Run `npm run type-check` to check for TypeScript errors
-5. Ask Pushpesh before making architectural changes
+5. Ask before making architectural changes

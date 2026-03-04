@@ -2,14 +2,13 @@
 
 **Version:** 1.1
 **Last Updated:** February 2026
-**Owner:** Pushpesh — Director of Product Management, AspenTech / Emerson
 **Status:** 🟡 In Development
 
 ---
 
 ## Problem Statement
 
-Emerson competes in the industrial automation and process simulation software space alongside Honeywell, Schneider Electric, ABB, Rockwell, SLB, and others. Understanding the financial health, profitability drivers, and value creation of these peers — and of key customers — is essential for:
+Industrial automation and process simulation software companies (Honeywell, Schneider Electric, ABB, Rockwell, SLB, Emerson, and others) compete in a complex market. Understanding the financial health, profitability drivers, and value creation of these peers — and of key customers — is essential for:
 
 - Pricing strategy decisions
 - Partnership and acquisition conversations (e.g. NVIDIA)
@@ -27,8 +26,8 @@ Companies are tagged as one of three types. The category affects filtering, badg
 
 ```
 COMPETITOR  —  Direct or adjacent software/automation competitors
-CUSTOMER    —  Energy, O&G, chemicals companies that buy Emerson products
-REFERENCE   —  Benchmark companies (Emerson itself)
+CUSTOMER    —  Energy, O&G, chemicals companies that buy industrial software
+REFERENCE   —  Benchmark companies (user's own company)
 ```
 
 ---
@@ -137,7 +136,7 @@ Key insights:
 | Rockwell Automation | ROK     | Direct process automation      |
 | Siemens AG          | SIEGY   | German industrial conglomerate |
 | PTC Inc             | PTC     | IIoT/PLM software peer         |
-| Aspen Technology    | AZPN    | Reference — AspenTech itself   |
+| Aspen Technology    | AZPN    | Process simulation software    |
 
 ### Customer Watchlist (suggested starting point)
 | Company             | Ticker   | Notes                          |

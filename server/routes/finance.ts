@@ -13,7 +13,7 @@ import { Router } from 'express';
 import YahooFinance from 'yahoo-finance2';
 import NodeCache from 'node-cache';
 import { transformFundamentalsData, validateFinancialData } from '../utils/transformer';
-import { FinanceApiError, classifyYahooError, ERROR_CODES } from '../utils/errors';
+import { FinanceApiError, classifyYahooError, ERROR_CODES, getErrorMessage } from '../utils/errors';
 import type { CompanyCategory } from '../../src/types';
 
 const router = Router();
@@ -145,7 +145,7 @@ router.get('/:ticker/full', async (req, res) => {
 
     // Classify the Yahoo Finance error
     const classifiedError = classifyYahooError(
-      error instanceof Error ? error : new Error(String(error)),
+      error instanceof Error ? error : new Error(getErrorMessage(error)),
       normalizedTicker
     );
 

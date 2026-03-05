@@ -39,6 +39,8 @@ interface FundamentalsTimeSeriesEntry {
   totalAssets?: number;
   stockholdersEquity?: number;
   totalStockholdersEquity?: number;
+  commonStockEquity?: number;
+  totalEquityGrossMinorityInterest?: number;
   totalDebt?: number;
   longTermDebt?: number;
   currentDebt?: number;
@@ -219,10 +221,15 @@ export function transformFundamentalsData(
   // =========================================================================
 
   // Get equity value - try different field names
+  // Yahoo Finance returns equity under various fields depending on the company
   const getEquity = (entry: FundamentalsTimeSeriesEntry | undefined): number => {
     if (!entry) return 0;
     return toMillions(
-      entry.stockholdersEquity ?? entry.totalStockholdersEquity ?? 0
+      entry.stockholdersEquity ??
+      entry.commonStockEquity ??
+      entry.totalEquityGrossMinorityInterest ??
+      entry.totalStockholdersEquity ??
+      0
     );
   };
 

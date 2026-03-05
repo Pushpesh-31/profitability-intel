@@ -41,19 +41,39 @@ async function fetchFinancialData(
     return response.data.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      const apiError = error.response?.data as FinanceApiResponse | undefined;
-      if (apiError?.error) {
+      const responseData = error.response?.data;
+
+      // Handle structured error response
+      if (responseData && typeof responseData === 'object' && 'error' in responseData) {
+        const apiError = responseData as FinanceApiResponse;
         const errorParts = [apiError.error];
         if (apiError.details?.length) {
           errorParts.push(`Missing: ${apiError.details.join(', ')}`);
         }
         throw new Error(errorParts.join('. '));
       }
+
+      // Handle string error response
+      if (typeof responseData === 'string' && responseData.length > 0) {
+        throw new Error(responseData);
+      }
+
+      // Handle connection errors
       if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
         throw new Error('Cannot connect to server. Is the backend running?');
       }
+
+      // Use axios error message as fallback
+      throw new Error(error.message || `Request failed with status ${error.response?.status}`);
     }
-    throw error;
+
+    // Handle non-axios errors
+    if (error instanceof Error) {
+      throw error;
+    }
+
+    // Handle unknown error types
+    throw new Error(typeof error === 'string' ? error : 'An unexpected error occurred');
   }
 }
 

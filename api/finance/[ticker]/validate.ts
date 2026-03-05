@@ -6,7 +6,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import yahooFinance from '../../../lib/yahoo-finance';
+import yahooFinance from '../../../lib/yahoo-finance.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow GET requests

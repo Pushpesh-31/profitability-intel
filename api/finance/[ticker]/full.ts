@@ -6,11 +6,11 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import yahooFinance from '../../../lib/yahoo-finance';
-import { transformFundamentalsData, validateFinancialData } from '../../../lib/transformer';
-import type { CompanyCategory } from '../../../lib/transformer';
-import { FinanceApiError, classifyYahooError, ERROR_CODES, getErrorMessage } from '../../../lib/errors';
-import { getCache, setCache } from '../../../lib/cache';
+import yahooFinance from '../../../lib/yahoo-finance.js';
+import { transformFundamentalsData, validateFinancialData } from '../../../lib/transformer.js';
+import type { CompanyCategory } from '../../../lib/transformer.js';
+import { FinanceApiError, classifyYahooError, ERROR_CODES, getErrorMessage } from '../../../lib/errors.js';
+import { getCache, setCache } from '../../../lib/cache.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow GET requests

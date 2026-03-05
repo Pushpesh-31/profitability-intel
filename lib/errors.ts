@@ -29,6 +29,20 @@ export class FinanceApiError extends Error {
 }
 
 /**
+ * Extract a meaningful error message from any error type
+ * Handles Error instances, strings, and plain objects with message/error properties
+ */
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object') {
+    if ('message' in error && typeof error.message === 'string') return error.message;
+    if ('error' in error && typeof error.error === 'string') return error.error;
+  }
+  return 'Unknown error occurred';
+}
+
+/**
  * Classify a Yahoo Finance error into a structured FinanceApiError
  */
 export function classifyYahooError(error: Error, ticker: string): FinanceApiError {

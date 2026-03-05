@@ -9,7 +9,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import yahooFinance from '../../../lib/yahoo-finance';
 import { transformFundamentalsData, validateFinancialData } from '../../../lib/transformer';
 import type { CompanyCategory } from '../../../lib/transformer';
-import { FinanceApiError, classifyYahooError, ERROR_CODES } from '../../../lib/errors';
+import { FinanceApiError, classifyYahooError, ERROR_CODES, getErrorMessage } from '../../../lib/errors';
 import { getCache, setCache } from '../../../lib/cache';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -137,7 +137,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Classify the Yahoo Finance error
     const classifiedError = classifyYahooError(
-      error instanceof Error ? error : new Error(String(error)),
+      error instanceof Error ? error : new Error(getErrorMessage(error)),
       normalizedTicker
     );
 

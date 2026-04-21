@@ -33,7 +33,7 @@ interface FundamentalsTimeSeriesEntry {
   ebit?: number;
   ebitda?: number;
   interestExpense?: number;
-  incomeTaxExpense?: number;
+  taxProvision?: number;
   pretaxIncome?: number;
   // Balance sheet items
   totalAssets?: number;
@@ -276,13 +276,13 @@ export function transformFundamentalsData(
       ? toMillions(currentFinancials.researchAndDevelopment)
       : null,
     sgaExpense: toMillions(currentFinancials?.sellingGeneralAndAdministration),
-    interestExpense: currentFinancials?.interestExpense
+    interestExpense: currentFinancials?.interestExpense != null
       ? toMillions(currentFinancials.interestExpense)
       : null,
-    incomeTaxExpense: currentFinancials?.incomeTaxExpense
-      ? toMillions(currentFinancials.incomeTaxExpense)
+    incomeTaxExpense: currentFinancials?.taxProvision != null
+      ? toMillions(currentFinancials.taxProvision)
       : null,
-    incomeBeforeTax: currentFinancials?.pretaxIncome
+    incomeBeforeTax: currentFinancials?.pretaxIncome != null
       ? toMillions(currentFinancials.pretaxIncome)
       : null,
 

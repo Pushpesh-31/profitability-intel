@@ -161,5 +161,6 @@ export function computeMetrics(
     costOfDebt,
     debtWeight,
     equityWeight,
+    effectiveCoe,
   };
 }

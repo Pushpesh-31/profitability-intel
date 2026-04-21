@@ -7,7 +7,7 @@ interface DuPontWaterfallProps {
 }
 
 export function DuPontWaterfall({ company }: DuPontWaterfallProps) {
-  const { metrics, color, data } = company;
+  const { metrics, color } = company;
 
   const steps = [
     { label: 'ROS', value: fmtPct(metrics.ros), sublabel: 'Return on Sales' },
@@ -87,7 +87,7 @@ export function DuPontWaterfall({ company }: DuPontWaterfallProps) {
             <div className="flex items-center gap-4">
               <span className="text-muted">Cost of Equity:</span>
               <span className="font-mono text-text">
-                {data.coeEstimate ? fmtPct(data.coeEstimate) : 'CAPM'}
+                {metrics.effectiveCoe != null ? fmtPct(metrics.effectiveCoe) : '—'}
               </span>
             </div>
             <div className="flex items-center gap-2">

@@ -122,6 +122,7 @@ export interface ExtendedMetrics extends DuPontMetrics {
   costOfDebt: number | null;
   debtWeight: number;
   equityWeight: number;
+  effectiveCoe: number | null;           // Resolved CAPM / override COE used in abnormalRoe
 }
 
 // ============================================================================
@@ -166,6 +167,7 @@ export interface AppState {
   activeFilter: 'all' | CompanyCategory;
   activeViewTab: ViewTab;
   assumptionsPanelOpen: boolean;
+  glossaryPanelOpen: boolean;
 
   // Assumptions
   assumptions: Assumptions;
@@ -181,6 +183,7 @@ export interface AppState {
   setFilter: (filter: 'all' | CompanyCategory) => void;
   setViewTab: (tab: ViewTab) => void;
   toggleAssumptionsPanel: () => void;
+  toggleGlossaryPanel: () => void;
   updateAssumptions: (patch: Partial<Assumptions>) => void;
   setCoeOverride: (ticker: string, value: number | null) => void;
   setCostOfDebtOverride: (ticker: string, value: number | null) => void;

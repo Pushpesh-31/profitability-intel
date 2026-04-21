@@ -6,6 +6,7 @@ import {
 import { PageShell } from '../components/layout/PageShell';
 import { Header } from '../components/layout/Header';
 import { AssumptionsPanel } from '../components/layout/AssumptionsPanel';
+import { GlossaryPanel } from '../components/layout/GlossaryPanel';
 import { FilterTabs } from '../components/ui/FilterTabs';
 import { ViewTabToggle } from '../components/ui/ViewTabToggle';
 import { ReferenceSelector } from '../components/ui/ReferenceSelector';
@@ -22,6 +23,7 @@ export function Dashboard() {
     <PageShell>
       <Header />
       <AssumptionsPanel />
+      <GlossaryPanel />
 
       {/* Navigation Row */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">

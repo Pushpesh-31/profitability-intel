@@ -13,6 +13,10 @@ export function Header() {
   const assumptionsPanelOpen = useAppStore(
     (state) => state.assumptionsPanelOpen
   );
+  const toggleGlossaryPanel = useAppStore(
+    (state) => state.toggleGlossaryPanel
+  );
+  const glossaryPanelOpen = useAppStore((state) => state.glossaryPanelOpen);
 
   const addCompanyMutation = useAddCompany();
 
@@ -93,6 +97,20 @@ export function Header() {
             )}
           >
             Assumptions
+          </button>
+
+          {/* Glossary Toggle */}
+          <button
+            type="button"
+            onClick={toggleGlossaryPanel}
+            className={cn(
+              'px-3 py-2 rounded-md text-sm font-medium transition-colors border',
+              glossaryPanelOpen
+                ? 'bg-accent/10 border-accent text-accent'
+                : 'bg-card border-border text-muted hover:text-text'
+            )}
+          >
+            Glossary
           </button>
         </form>
       </div>

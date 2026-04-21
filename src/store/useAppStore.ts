@@ -203,6 +203,7 @@ export const useAppStore = create<AppState>((set) => {
     activeFilter: 'all',
     activeViewTab: 'deep-dive',
     assumptionsPanelOpen: false,
+    glossaryPanelOpen: false,
     assumptions: initialAssumptions,
     palette: [...CHART_PALETTE],
 
@@ -278,6 +279,10 @@ export const useAppStore = create<AppState>((set) => {
 
     toggleAssumptionsPanel: () => {
       set((state) => ({ assumptionsPanelOpen: !state.assumptionsPanelOpen }));
+    },
+
+    toggleGlossaryPanel: () => {
+      set((state) => ({ glossaryPanelOpen: !state.glossaryPanelOpen }));
     },
 
     // ========================================================================
